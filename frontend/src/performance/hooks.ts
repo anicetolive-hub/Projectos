@@ -73,3 +73,11 @@ export function useAlertWatcher() {
 export function notifyDataChanged() {
   window.dispatchEvent(new Event("perf-data-changed"));
 }
+
+/** Recarrega a página quando outro componente (ex: o assistente de chat) altera dados. */
+export function useReloadOnExternalChange(reload: () => void) {
+  useEffect(() => {
+    window.addEventListener("perf-reload-pages", reload);
+    return () => window.removeEventListener("perf-reload-pages", reload);
+  }, [reload]);
+}

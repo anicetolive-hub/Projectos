@@ -135,10 +135,29 @@ export async function mockRequest<T>(path: string, init?: RequestInit): Promise<
   const method = (init?.method ?? "GET").toUpperCase();
   const body = init?.body ? (JSON.parse(String(init.body)) as Record<string, unknown>) : {};
 
+  if (url.pathname.startsWith("/api/assistant/")) return (await handleAssistant(url.pathname, body, init)) as T;
   const result = handleAuth(url.pathname, method, body, init) ?? handleApi(url, method, body, init);
   if (result === undefined) return undefined as T;
   // Simula a serialização JSON da API (datas passam a texto ISO)
   return JSON.parse(JSON.stringify(result)) as T;
+}
+
+async function handleAssistant(pathname: string, body: Record<string, unknown>, init?: RequestInit) {
+  const user = currentUser(init);
+  const { demoAssistantChat, demoAssistantStatus } = await import("./mockAssistant");
+  if (pathname === "/api/assistant/status") return demoAssistantStatus();
+  if (pathname !== "/api/assistant/chat") fail(404, "Rota não encontrada");
+  const message = String(body.message ?? "").trim();
+  if (!message) fail(400, "Mensagem vazia");
+  // As ferramentas do assistente chamam esta mesma API simulada, como o utilizador
+  const call = (method: string, path: string, payload?: unknown) =>
+    mockRequest(path, {
+      method,
+      body: payload === undefined ? undefined : JSON.stringify(payload),
+      headers: { Authorization: `Bearer demo:${user.id}` },
+    });
+  const conversationId = typeof body.conversationId === "string" ? body.conversationId : undefined;
+  return demoAssistantChat(user, call, message, conversationId);
 }
 
 function handleAuth(pathname: string, method: string, body: Record<string, unknown>, init?: RequestInit) {

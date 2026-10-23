@@ -3,7 +3,7 @@ import { ApiError } from "../api";
 import { useAuth } from "../auth/context";
 import { perfApi, type ObjectiveInput } from "../performance/api";
 import { HealthBadge, ProgressBar, TimingBadge } from "../performance/components";
-import { notifyDataChanged } from "../performance/hooks";
+import { notifyDataChanged, useReloadOnExternalChange } from "../performance/hooks";
 import { daysLabel, formatDate, OBJECTIVE_LEVEL_LABEL, scoreHealth, TIMING_HEALTH } from "../performance/labels";
 import type { Department, Objective, ObjectiveLevel, ObjectiveStatus, Person } from "../performance/types";
 
@@ -56,6 +56,7 @@ export function Objectives() {
   const reload = useCallback(() => {
     perfApi.objectives.list().then(setObjectives);
   }, []);
+  useReloadOnExternalChange(reload);
 
   useEffect(() => {
     reload();
