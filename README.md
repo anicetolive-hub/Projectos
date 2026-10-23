@@ -12,7 +12,12 @@ backend/   API REST em Node.js + TypeScript + Express + Prisma (SQLite)
 frontend/  Painel web em React + Vite + TypeScript
 ```
 
-## Como correr
+## Instalar num servidor
+
+Para pôr a aplicação a funcionar num servidor Ubuntu, com HTTPS e cópias de
+segurança, basta um comando: ver [deploy/INSTALAR.md](deploy/INSTALAR.md).
+
+## Como correr (desenvolvimento)
 
 ### 1. Backend
 
