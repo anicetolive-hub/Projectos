@@ -1,0 +1,211 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// SQLite não suporta enums nativos no Prisma; os valores válidos de cada
+// campo de "tipo" são validados com zod nas rotas (src/routes/*.ts).
+
+// ---------------------------------------------------------------------------
+// Módulo de Gestão de Performance (KPIs, pessoas, projetos e tarefas)
+// Valores válidos (validados com zod em src/routes/performance/*.ts):
+//  Person.role: DIRECTOR | MANAGER | COORDINATOR | STAFF
+//  Kpi.direction: HIGHER_IS_BETTER | LOWER_IS_BETTER
+//  Kpi.frequency: WEEKLY | MONTHLY | QUARTERLY | YEARLY
+//  Project.status: PLANNED | IN_PROGRESS | ON_HOLD | DONE | CANCELLED
+//  Task.status: TODO | IN_PROGRESS | BLOCKED | DONE | CANCELLED
+//  priority: LOW | MEDIUM | HIGH | CRITICAL
+//  Objective.level: STRATEGIC | DIRECTION | INDIVIDUAL
+//  Objective.status: ACTIVE | ACHIEVED | CANCELLED
+// ---------------------------------------------------------------------------
+
+model Department {
+  id          String       @id @default(cuid())
+  name        String
+  code        String       @unique // ex: "DSI", "INFRA"
+  description String?
+
+  // Hierarquia: a direção é o departamento raiz; as áreas apontam para ela
+  parent      Department?  @relation("DepartmentTree", fields: [parentId], references: [id])
+  parentId    String?
+  children    Department[] @relation("DepartmentTree")
+
+  people      Person[]
+  kpis        Kpi[]
+  projects    Project[]
+  objectives  Objective[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Person {
+  id           String      @id @default(cuid())
+  fullName     String
+  email        String?     @unique // usado como login
+  jobTitle     String?
+  role         String      @default("STAFF")
+  department   Department? @relation(fields: [departmentId], references: [id])
+  departmentId String?
+  active       Boolean     @default(true)
+
+  // Acesso à aplicação: sem passwordHash a pessoa não consegue entrar.
+  // Administradores gerem a estrutura (departamentos, pessoas, KPIs, objetivos).
+  passwordHash String?
+  isAdmin      Boolean     @default(false)
+  sessions     Session[]
+
+  kpis         Kpi[]
+  projects     Project[]
+  tasks        Task[]
+  objectives   Objective[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([departmentId])
+}
+
+model Kpi {
+  id           String      @id @default(cuid())
+  name         String
+  description  String?
+  unit         String? // ex: "%", "h", "tickets"
+  direction    String      @default("HIGHER_IS_BETTER")
+  frequency    String      @default("MONTHLY")
+  target       Float
+  // % de atingimento abaixo do qual o KPI fica vermelho (entre este valor e 100 fica amarelo)
+  warningThreshold Float   @default(90)
+  weight       Float       @default(1)
+
+  department   Department? @relation(fields: [departmentId], references: [id])
+  departmentId String?
+  owner        Person?     @relation(fields: [ownerId], references: [id])
+  ownerId      String?
+  // Objetivo para o qual este KPI contribui (opcional)
+  objective    Objective?  @relation(fields: [objectiveId], references: [id], onDelete: SetNull)
+  objectiveId  String?
+
+  measurements KpiMeasurement[]
+  active       Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([departmentId])
+  @@index([ownerId])
+}
+
+model KpiMeasurement {
+  id        String   @id @default(cuid())
+  kpi       Kpi      @relation(fields: [kpiId], references: [id], onDelete: Cascade)
+  kpiId     String
+  period    String // ex: "2026-10" (mensal), "2026-Q4" (trimestral), "2026-W43" (semanal), "2026" (anual)
+  value     Float
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([kpiId, period])
+}
+
+model Project {
+  id           String      @id @default(cuid())
+  name         String
+  description  String?
+  status       String      @default("PLANNED")
+  priority     String      @default("MEDIUM")
+  startDate    DateTime
+  dueDate      DateTime
+  completedAt  DateTime?
+
+  owner        Person?     @relation(fields: [ownerId], references: [id])
+  ownerId      String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  departmentId String?
+  // Objetivo para o qual este projeto contribui (opcional)
+  objective    Objective?  @relation(fields: [objectiveId], references: [id], onDelete: SetNull)
+  objectiveId  String?
+
+  tasks        Task[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  status      String    @default("TODO")
+  priority    String    @default("MEDIUM")
+  progress    Int       @default(0) // 0-100
+  startDate   DateTime?
+  dueDate     DateTime
+  completedAt DateTime?
+
+  project     Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId   String?
+  assignee    Person?   @relation(fields: [assigneeId], references: [id])
+  assigneeId  String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([projectId])
+  @@index([assigneeId])
+  @@index([status])
+}
+
+// Registo dos alertas já enviados por webhook (Teams/Slack), para não repetir
+// a mesma notificação a cada verificação periódica nem após reiniciar a API.
+model AlertNotification {
+  alertKey   String   @id // ex: "task-overdue:<taskId>"
+  notifiedAt DateTime @default(now())
+}
+
+// Objetivos em cascata: estratégicos (da organização) → de direção/departamento
+// → individuais. O progresso é calculado a partir do que está ligado ao
+// objetivo (KPIs, projetos e objetivos filhos); sem ligações, usa o
+// progresso indicado manualmente.
+model Objective {
+  id           String      @id @default(cuid())
+  title        String
+  description  String?
+  level        String // STRATEGIC | DIRECTION | INDIVIDUAL
+  status       String      @default("ACTIVE")
+  weight       Float       @default(1)
+  progress     Int         @default(0) // progresso manual, 0-100
+  startDate    DateTime
+  dueDate      DateTime
+  achievedAt   DateTime?
+
+  parent       Objective?  @relation("ObjectiveTree", fields: [parentId], references: [id], onDelete: SetNull)
+  parentId     String?
+  children     Objective[] @relation("ObjectiveTree")
+
+  department   Department? @relation(fields: [departmentId], references: [id])
+  departmentId String?
+  owner        Person?     @relation(fields: [ownerId], references: [id])
+  ownerId      String?
+
+  kpis         Kpi[]
+  projects     Project[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([level])
+  @@index([ownerId])
+  @@index([departmentId])
+}
+
+model Session {
+  id         String   @id @default(cuid())
+  tokenHash  String   @unique // SHA-256 do token; o token em si só existe no navegador
+  person     Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  personId   String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([personId])
+}
