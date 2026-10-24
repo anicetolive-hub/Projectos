@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ApiError } from "../api";
+import { useReloadOnExternalChange } from "../performance/hooks";
 import { perfApi } from "../performance/api";
 import { AlertList } from "../performance/AlertList";
 import { HealthBadge, ProgressBar, ScoreValue, TimingBadge } from "../performance/components";
@@ -21,6 +22,7 @@ export function PerformanceDashboard() {
       })
       .catch((err) => setError(err instanceof ApiError ? err.message : "Não foi possível carregar o painel"));
   }, []);
+  useReloadOnExternalChange(load);
 
   useEffect(load, [load]);
 

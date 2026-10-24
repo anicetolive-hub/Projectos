@@ -12,7 +12,12 @@ backend/   API REST em Node.js + TypeScript + Express + Prisma (SQLite)
 frontend/  Painel web em React + Vite + TypeScript
 ```
 
-## Como correr
+## Instalar num servidor
+
+Para pôr a aplicação a funcionar num servidor Ubuntu, com HTTPS e cópias de
+segurança, basta um comando: ver [deploy/INSTALAR.md](deploy/INSTALAR.md).
+
+## Como correr (desenvolvimento)
 
 ### 1. Backend
 
@@ -41,6 +46,39 @@ cp .env.example .env       # aponta VITE_API_URL para a API
 npm run dev                 # abre em http://localhost:5173
 ```
 
+## Assistente de chat
+
+Em todas as páginas há um botão **Assistente** que abre um chat. Escreve-se em
+linguagem natural para consultar ou registar informação sem ir aos menus, por
+exemplo:
+
+- "Que tarefas minhas estão atrasadas?"
+- "Como está a performance dos coordenadores?"
+- "Cria um objetivo individual para o Coordenador de Redes: documentar as VPNs até 30 de novembro"
+- "Regista 92% no KPI de tickets dentro do SLA de outubro"
+- "Marca a tarefa da reunião com o CEO como concluída"
+
+O assistente usa o Claude (API da Anthropic) com ferramentas que chamam a
+própria API da aplicação **com a sessão de quem está a escrever**: vê e altera
+só o que essa pessoa veria e alteraria pelos menus, com as mesmas validações.
+Não remove nada; para apagar usam-se os menus. Cada alteração feita aparece no
+chat (✔ ou ✕) e as páginas abertas atualizam-se sozinhas.
+
+Configuração (`backend/.env`):
+
+- `ANTHROPIC_API_KEY`: chave criada em https://console.anthropic.com. Sem ela o
+  chat fica desativado e o resto da aplicação funciona normalmente.
+- `ASSISTANT_MODEL` (padrão `claude-opus-5-5`) e `ASSISTANT_TIME_ZONE`
+  (padrão `Africa/Luanda`, para interpretar "hoje", "sexta", "fim do mês").
+
+Privacidade: as mensagens e os dados que o assistente consulta para responder
+são enviados à API da Anthropic. Cada conversa fica guardada na memória do
+servidor durante 2 horas e perde-se ao reiniciar a API.
+
+Código: `backend/src/services/assistant/` (`tools.ts` define as ferramentas,
+`executor.ts` executa-as, `assistant.ts` gere a conversa, `prompt.ts` tem as
+instruções) e `frontend/src/assistant/`.
+
 ## Versão de demonstração (sem servidor)
 
 `cd frontend && npm run build:demo` gera `frontend/dist-demo/demo.html`: uma
@@ -49,7 +87,9 @@ inteira no navegador (também no telemóvel). Não precisa de backend nem de bas
 de dados: as chamadas à API são respondidas no próprio navegador
 (`frontend/src/demo/mockApi.ts`), com o mesmo motor de cálculo e as mesmas
 regras de acesso do backend, e as alterações ficam guardadas só nesse
-aparelho. Na entrada escolhe-se com que perfil entrar (diretor, gestor,
+aparelho. O assistente de chat, na demonstração, funciona só com a página
+aberta no claude.ai: usa o Claude da conta de quem a está a ver
+(`frontend/src/demo/mockAssistant.ts`). Na entrada escolhe-se com que perfil entrar (diretor, gestor,
 coordenador ou colaborador). Serve para avaliar a ferramenta; não é para uso
 real.
 

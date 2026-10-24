@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ApiError } from "../api";
 import { useAuth } from "../auth/context";
 import { perfApi } from "../performance/api";
 import { AlertList } from "../performance/AlertList";
-import { useCurrentPersonId } from "../performance/hooks";
+import { useCurrentPersonId, useReloadOnExternalChange } from "../performance/hooks";
 import type { Alert, AlertSeverity } from "../performance/types";
 
 export function Alerts() {
@@ -15,9 +15,11 @@ export function Alerts() {
   const [permission, setPermission] = useState(() => ("Notification" in window ? Notification.permission : "denied"));
   const [message, setMessage] = useState<string | null>(null);
 
-  useEffect(() => {
+  const reload = useCallback(() => {
     perfApi.alerts().then(setAlerts);
   }, []);
+  useEffect(reload, [reload]);
+  useReloadOnExternalChange(reload);
 
   async function enableBrowserNotifications() {
     if (!("Notification" in window)) return;

@@ -3,7 +3,7 @@ import { ApiError } from "../api";
 import { useAuth } from "../auth/context";
 import { perfApi } from "../performance/api";
 import { HealthBadge, ScoreValue } from "../performance/components";
-import { notifyDataChanged } from "../performance/hooks";
+import { notifyDataChanged, useReloadOnExternalChange } from "../performance/hooks";
 import { ROLE_LABEL } from "../performance/labels";
 import { departmentTree } from "../performance/tree";
 import type { Department, Person, Role } from "../performance/types";
@@ -31,6 +31,7 @@ export function Team() {
     perfApi.departments.list().then(setDepartments);
     perfApi.people.list().then(setPeople);
   }, []);
+  useReloadOnExternalChange(reload);
 
   useEffect(reload, [reload]);
 

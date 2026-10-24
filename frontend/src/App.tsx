@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { NavLink, Route, Routes } from "react-router-dom";
 import "./App.css";
+import { ChatPanel } from "./assistant/ChatPanel";
 import { AuthProvider } from "./auth/AuthContext";
 import { useAuth } from "./auth/context";
 import { LoginPage } from "./auth/LoginPage";
@@ -66,6 +67,7 @@ function Shell() {
           <Route path="/alertas" element={<Alerts />} />
         </Routes>
       </main>
+      <ChatPanel />
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { ApiError } from "../api";
 import { useAuth } from "../auth/context";
 import { perfApi, type ProjectInput, type TaskInput } from "../performance/api";
 import { HealthBadge, ProgressBar, TimingBadge } from "../performance/components";
-import { notifyDataChanged, useCurrentPersonId } from "../performance/hooks";
+import { notifyDataChanged, useCurrentPersonId, useReloadOnExternalChange } from "../performance/hooks";
 import {
   daysLabel,
   formatDate,
@@ -72,6 +72,7 @@ export function ProjectsTasks() {
       setTasks(t);
     });
   }, []);
+  useReloadOnExternalChange(reload);
 
   useEffect(() => {
     reload();

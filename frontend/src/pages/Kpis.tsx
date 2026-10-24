@@ -3,7 +3,7 @@ import { ApiError } from "../api";
 import { useAuth } from "../auth/context";
 import { perfApi, type KpiInput } from "../performance/api";
 import { HealthBadge } from "../performance/components";
-import { notifyDataChanged } from "../performance/hooks";
+import { notifyDataChanged, useReloadOnExternalChange } from "../performance/hooks";
 import { FREQUENCY_LABEL, formatNumber } from "../performance/labels";
 import { departmentTree } from "../performance/tree";
 import type { Department, Kpi, KpiDirection, KpiFrequency, Objective, Person } from "../performance/types";
@@ -39,6 +39,7 @@ export function Kpis() {
   const reload = useCallback(() => {
     perfApi.kpis.list().then(setKpis);
   }, []);
+  useReloadOnExternalChange(reload);
 
   useEffect(() => {
     reload();

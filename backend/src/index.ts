@@ -3,6 +3,7 @@ import express from "express";
 import { env } from "./lib/env";
 import { requireAuth } from "./middleware/auth";
 import { errorHandler } from "./middleware/errorHandler";
+import { assistantRouter } from "./routes/assistant";
 import { authRouter } from "./routes/auth";
 import { performanceRouter } from "./routes/performance";
 import { startAlertScheduler } from "./services/performance/alertNotifier";
@@ -19,6 +20,7 @@ app.use("/api/auth", authRouter);
 // Todas as outras rotas da API exigem login
 app.use("/api", requireAuth);
 app.use("/api/performance", performanceRouter);
+app.use("/api/assistant", assistantRouter);
 
 app.use(errorHandler);
 

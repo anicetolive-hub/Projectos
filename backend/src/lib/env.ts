@@ -10,6 +10,14 @@ export const env = {
     // Duração de uma sessão de login, em horas
     sessionTtlHours: Number(process.env.SESSION_TTL_HOURS ?? 12),
   },
+  assistant: {
+    // O assistente de chat precisa de uma chave da API Anthropic (ou outra credencial que o SDK reconheça)
+    enabled:
+      process.env.ASSISTANT_ENABLED !== "false" && !!(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN),
+    model: process.env.ASSISTANT_MODEL ?? "claude-opus-5-5",
+    // Fuso horário para o assistente saber que dia é hoje
+    timeZone: process.env.ASSISTANT_TIME_ZONE ?? "Africa/Luanda",
+  },
   performance: {
     // Tarefas/projetos a N dias (ou menos) do prazo geram alerta "prazo a terminar"
     dueSoonDays: Number(process.env.ALERT_DUE_SOON_DAYS ?? 3),
