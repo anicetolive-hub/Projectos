@@ -97,6 +97,28 @@ const score = (s?: Row | null) =>
 
 const alert = (a: Row) => pick({ severidade: a.severity, tipo: a.category, titulo: a.title, detalhe: a.message, responsavel: a.ownerName });
 
+const achievement = (a: Row) =>
+  pick({
+    id: a.id,
+    titulo: a.title,
+    tipo: a.type,
+    estado: a.status,
+    impacto: a.impact,
+    data: day(a.date),
+    autores: (a.authors ?? []).map(name).join(", "),
+    departamento: a.department?.code,
+    projeto: a.project?.name,
+    objetivo: a.objective?.title,
+    destaque: a.highlighted || null,
+  });
+
+const ACHIEVEMENT_LABEL: Record<string, string> = {
+  SOLUTION: "Solução",
+  IDEA: "Ideia",
+  IMPROVEMENT: "Melhoria",
+  RECOGNITION: "Reconhecimento",
+};
+
 const json = (v: unknown) => JSON.stringify(v);
 const isOpen = (status: string) => status !== "DONE" && status !== "CANCELLED";
 
@@ -219,6 +241,39 @@ export async function runAssistantTool(toolName: string, input: Input, call: Api
       case "registar_valor_kpi": {
         const m = (await call("POST", `${P}/kpis/${input.kpi_id}/measurements`, pick({ value: input.valor, period: input.periodo }))) as Row;
         return { ok: true, content: json({ registado: true, periodo: m.period }), summary: `Valor de KPI registado (${m.period}): ${m.value}` };
+      }
+      case "listar_feitos": {
+        let list = (await call("GET", `${P}/achievements`)) as Row[];
+        if (input.tipo) list = list.filter((a) => a.type === input.tipo);
+        if (input.estado) list = list.filter((a) => a.status === input.estado);
+        return { ok: true, content: json(list.map(achievement)) };
+      }
+      case "registar_feito": {
+        const created = (await call("POST", `${P}/achievements`, {
+          title: input.titulo,
+          type: input.tipo,
+          description: input.descricao ?? null,
+          impact: input.impacto ?? null,
+          date: input.data ?? new Date().toISOString().slice(0, 10),
+          authorIds: Array.isArray(input.autores_ids) && input.autores_ids.length ? input.autores_ids : [userId],
+          departmentId: input.departamento_id ?? null,
+          projectId: input.projeto_id ?? null,
+          objectiveId: input.objetivo_id ?? null,
+        })) as Row;
+        return {
+          ok: true,
+          content: json({ registado: true, id: created.id, estado: created.status }),
+          summary: `Registado no mural (${ACHIEVEMENT_LABEL[created.type] ?? "Feito"}): ${created.title}`,
+        };
+      }
+      case "atualizar_feito": {
+        const updated = (await call("PUT", `${P}/achievements/${input.id}`, pick({
+          status: input.estado,
+          impact: input.impacto,
+          description: input.descricao,
+          highlighted: input.destaque,
+        }))) as Row;
+        return { ok: true, content: json({ atualizado: true, estado: updated.status }), summary: `Feito atualizado: ${updated.title}` };
       }
       default:
         return { ok: false, content: `Ferramenta desconhecida: ${toolName}` };

@@ -57,6 +57,8 @@ exemplo:
 - "Cria um objetivo individual para o Coordenador de Redes: documentar as VPNs até 30 de novembro"
 - "Regista 92% no KPI de tickets dentro do SLA de outubro"
 - "Marca a tarefa da reunião com o CEO como concluída"
+- "Regista a solução do portal de self-service: 35% menos chamadas ao Service Desk"
+- "Que ideias estão em avaliação?"
 
 O assistente usa o Claude (API da Anthropic) com ferramentas que chamam a
 própria API da aplicação **com a sessão de quem está a escrever**: vê e altera
@@ -122,6 +124,7 @@ no canto superior direito.
 | **Objetivos** | Objetivos em cascata: **estratégicos** (organização) → **de direção** (departamento) → **individuais** (pessoa), com progresso, ritmo e situação de prazo. |
 | **KPIs** | Cadastro de KPIs por departamento e responsável (meta, sentido, frequência, peso) e registo dos valores de cada período, com histórico e tendência. |
 | **Projetos e tarefas** | Projetos com progresso e situação de prazo; tarefas com responsável, prazo e progresso. Filtros "As minhas", "Abertas" e "Atrasadas / em risco". |
+| **Feitos** | Mural dos grandes feitos da direção: soluções desenvolvidas, ideias inovadoras (proposta → em avaliação → aprovada → implementada, ou posta de parte), melhorias de processo e reconhecimentos, com autores, impacto e ligação a projetos/objetivos. Todos veem e todos podem propor; os destaques aparecem na visão geral. |
 | **Equipa** | Estrutura de departamentos (a direção no topo e as áreas por baixo) e pessoas com o seu nível: diretor, gestor, coordenador ou colaborador. |
 | **Alertas** | Todos os alertas ativos, com filtro por severidade e "só os meus". |
 

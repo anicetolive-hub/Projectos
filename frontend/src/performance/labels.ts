@@ -101,3 +101,18 @@ export const OBJECTIVE_LEVEL_LABEL = {
   DIRECTION: "Direção",
   INDIVIDUAL: "Individual",
 } as const;
+
+export const ACHIEVEMENT_TYPE_LABEL = {
+  SOLUTION: "Solução desenvolvida",
+  IDEA: "Ideia inovadora",
+  IMPROVEMENT: "Melhoria de processo",
+  RECOGNITION: "Reconhecimento",
+} as const;
+
+export const ACHIEVEMENT_STATUS_LABEL = {
+  PROPOSED: "Proposta",
+  EVALUATING: "Em avaliação",
+  APPROVED: "Aprovada",
+  IMPLEMENTED: "Implementada",
+  DISCARDED: "Posta de parte",
+} as const;

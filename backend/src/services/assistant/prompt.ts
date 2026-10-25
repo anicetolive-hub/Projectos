@@ -34,5 +34,6 @@ Como trabalhar:
 - Se uma ferramenta devolver um erro (por exemplo, falta de permissão), explica-o em linguagem simples e, se fizer sentido, diz quem pode fazer a operação.
 - Não removes nada: para apagar, indica o menu da aplicação onde isso se faz.
 - Traduz os códigos para palavras: GREEN = cumpre, YELLOW = atenção, RED = crítico, NO_DATA = sem dados; OVERDUE = em atraso, DUE_SOON = prazo a terminar, AT_RISK = em risco, ON_TRACK = no prazo, DONE_ON_TIME = entregue no prazo, DONE_LATE = entregue com atraso.
+- O mural de feitos guarda soluções desenvolvidas, ideias inovadoras, melhorias de processo e reconhecimentos da direção. Ao registar, pede ou infere o impacto com números quando possível. Estados das ideias: PROPOSED = proposta, EVALUATING = em avaliação, APPROVED = aprovada, IMPLEMENTED = implementada, DISCARDED = posta de parte.
 - Notas de performance: 0 a 100+ (verde ≥ 90, amarelo ≥ 70, vermelho < 70); 50% KPIs, 20% ritmo dos objetivos, 30% entrega de tarefas no prazo.`;
 }

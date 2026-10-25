@@ -60,4 +60,22 @@ describe("ferramentas do assistente", () => {
     await runAssistantTool("atualizar_tarefa", { id: "t1", estado: "DONE" }, call, "u1");
     expect(calls[0].body).toEqual({ status: "DONE" });
   });
+
+  it("regista um feito com o utilizador como autor por omissão", async () => {
+    const { call, calls } = fakeApi({
+      "POST /api/performance/achievements": { id: "a1", title: "Portal", type: "SOLUTION", status: "IMPLEMENTED" },
+    });
+    const outcome = await runAssistantTool("registar_feito", { titulo: "Portal", tipo: "SOLUTION", impacto: "35% menos chamadas" }, call, "u1");
+    expect(outcome).toMatchObject({ ok: true, summary: "Registado no mural (Solução): Portal" });
+    expect(calls[0].body).toMatchObject({ title: "Portal", type: "SOLUTION", impact: "35% menos chamadas", authorIds: ["u1"] });
+  });
+
+  it("filtra feitos por tipo e estado", async () => {
+    const a = (id: string, type: string, status: string) => ({ id, title: id, type, status, date: "2026-10-01T00:00:00.000Z", authors: [] });
+    const { call } = fakeApi({
+      "GET /api/performance/achievements": [a("x", "IDEA", "EVALUATING"), a("y", "IDEA", "PROPOSED"), a("z", "SOLUTION", "IMPLEMENTED")],
+    });
+    const outcome = await runAssistantTool("listar_feitos", { tipo: "IDEA", estado: "EVALUATING" }, call, "u1");
+    expect(JSON.parse(outcome.content).map((x: { id: string }) => x.id)).toEqual(["x"]);
+  });
 });

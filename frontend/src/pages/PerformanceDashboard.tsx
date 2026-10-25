@@ -5,15 +5,20 @@ import { useReloadOnExternalChange } from "../performance/hooks";
 import { perfApi } from "../performance/api";
 import { AlertList } from "../performance/AlertList";
 import { HealthBadge, ProgressBar, ScoreValue, TimingBadge } from "../performance/components";
-import { formatDate, ROLE_LABEL, scoreHealth, TIMING_HEALTH } from "../performance/labels";
+import { ACHIEVEMENT_TYPE_LABEL, formatDate, ROLE_LABEL, scoreHealth, TIMING_HEALTH } from "../performance/labels";
 import { departmentTree } from "../performance/tree";
-import type { Dashboard } from "../performance/types";
+import type { Achievement, Dashboard } from "../performance/types";
 
 export function PerformanceDashboard() {
   const [data, setData] = useState<Dashboard | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
 
   const load = useCallback(() => {
+    perfApi.achievements
+      .list()
+      .then(setAchievements)
+      .catch(() => setAchievements([]));
     perfApi
       .dashboard()
       .then((d) => {
@@ -28,6 +33,10 @@ export function PerformanceDashboard() {
 
   if (error) return <div className="error-banner">{error}</div>;
   if (!data) return <p className="hint">Carregando...</p>;
+
+  // Destaques escolhidos pelos administradores; sem destaques, os mais recentes já concretizados
+  const highlighted = achievements.filter((a) => a.highlighted);
+  const featured = (highlighted.length > 0 ? highlighted : achievements.filter((a) => a.status === "IMPLEMENTED")).slice(0, 3);
 
   const roots = data.departments.filter((d) => !d.parentId);
   const directionScore =
@@ -130,6 +139,29 @@ export function PerformanceDashboard() {
                 <div>
                   <TimingBadge timing={o.schedule.timing} />
                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {featured.length > 0 && (
+        <div className="card">
+          <div className="page-header" style={{ marginBottom: "0.6rem" }}>
+            <h3 className="card-title" style={{ margin: 0 }}>
+              {highlighted.length > 0 ? "Feitos em destaque" : "Feitos recentes"}
+            </h3>
+            <Link to="/feitos">Ver mural de feitos</Link>
+          </div>
+          <div className="objective-cards">
+            {featured.map((a) => (
+              <div key={a.id} className="objective-card">
+                <span className="hint">
+                  {ACHIEVEMENT_TYPE_LABEL[a.type]} · {formatDate(a.date)}
+                </span>
+                <strong>{a.title}</strong>
+                {a.impact && <span className="health-text-GREEN">{a.impact}</span>}
+                <span className="hint">{a.authors.map((p) => p.fullName).join(", ")}</span>
               </div>
             ))}
           </div>

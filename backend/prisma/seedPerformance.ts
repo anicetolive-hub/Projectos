@@ -30,6 +30,9 @@ async function main() {
     prisma.kpiMeasurement.createMany({ data: data.measurements }),
     prisma.project.createMany({ data: data.projects }),
     prisma.task.createMany({ data: data.tasks }),
+    ...data.achievements.map(({ authorIds, ...a }) =>
+      prisma.achievement.create({ data: { ...a, authors: { connect: authorIds.map((id) => ({ id })) } } }),
+    ),
   ]);
 
   const admin = data.people.find((p) => p.isAdmin);

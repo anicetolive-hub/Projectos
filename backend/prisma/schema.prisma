@@ -38,6 +38,7 @@ model Department {
   kpis        Kpi[]
   projects    Project[]
   objectives  Objective[]
+  achievements Achievement[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 }
@@ -62,6 +63,8 @@ model Person {
   projects     Project[]
   tasks        Task[]
   objectives   Objective[]
+  achievements Achievement[] @relation("AchievementAuthors")
+  achievementsCreated Achievement[] @relation("AchievementCreator")
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
@@ -129,6 +132,7 @@ model Project {
   objectiveId  String?
 
   tasks        Task[]
+  achievements Achievement[]
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 }
@@ -191,6 +195,7 @@ model Objective {
 
   kpis         Kpi[]
   projects     Project[]
+  achievements Achievement[]
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
@@ -208,4 +213,37 @@ model Session {
   createdAt  DateTime @default(now())
 
   @@index([personId])
+}
+
+// Grandes feitos da direção: soluções desenvolvidas, ideias inovadoras,
+// melhorias de processo e reconhecimentos. Mural visível para toda a direção.
+//  type:   SOLUTION | IDEA | IMPROVEMENT | RECOGNITION
+//  status: PROPOSED | EVALUATING | APPROVED | IMPLEMENTED | DISCARDED
+//          (ideias percorrem todos; os restantes tipos nascem IMPLEMENTED)
+model Achievement {
+  id           String      @id @default(cuid())
+  title        String
+  description  String?
+  type         String
+  status       String      @default("IMPLEMENTED")
+  impact       String? // ex: "120 horas poupadas por mês", "Poupança de 15 M Kz/ano"
+  date         DateTime // quando foi entregue / proposta
+  link         String? // documento, repositório, notícia...
+  highlighted  Boolean     @default(false) // destaque na visão geral (administradores)
+
+  authors      Person[]    @relation("AchievementAuthors")
+  department   Department? @relation(fields: [departmentId], references: [id])
+  departmentId String?
+  project      Project?    @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  projectId    String?
+  objective    Objective?  @relation(fields: [objectiveId], references: [id], onDelete: SetNull)
+  objectiveId  String?
+  createdBy    Person?     @relation("AchievementCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdById  String?
+
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([type])
+  @@index([date])
 }

@@ -5,6 +5,7 @@ import { ChatPanel } from "./assistant/ChatPanel";
 import { AuthProvider } from "./auth/AuthContext";
 import { useAuth } from "./auth/context";
 import { LoginPage } from "./auth/LoginPage";
+import { Achievements } from "./pages/Achievements";
 import { Alerts } from "./pages/Alerts";
 import { Kpis } from "./pages/Kpis";
 import { Objectives } from "./pages/Objectives";
@@ -51,6 +52,7 @@ function Shell() {
             <NavLink to="/objetivos">Objetivos</NavLink>
             <NavLink to="/kpis">KPIs</NavLink>
             <NavLink to="/projetos">Projetos e tarefas</NavLink>
+            <NavLink to="/feitos">Feitos</NavLink>
             <NavLink to="/equipa">Equipa</NavLink>
             <NavLink to="/alertas">Alertas</NavLink>
           </div>
@@ -63,6 +65,7 @@ function Shell() {
           <Route path="/objetivos" element={<Objectives />} />
           <Route path="/kpis" element={<Kpis />} />
           <Route path="/projetos" element={<ProjectsTasks />} />
+          <Route path="/feitos" element={<Achievements />} />
           <Route path="/equipa" element={<Team />} />
           <Route path="/alertas" element={<Alerts />} />
         </Routes>

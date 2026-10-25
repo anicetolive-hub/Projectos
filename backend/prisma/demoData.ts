@@ -211,7 +211,105 @@ export function buildDemoData(now = new Date()) {
     task("t-relatorio", "Relatório mensal de SLA", { assigneeId: "p-csd", due: -15, status: "DONE", completed: -16 }),
   ];
 
-  return { departments, people, objectives, kpis, measurements, projects, tasks };
+  // Grandes feitos: soluções entregues, ideias em vários estados, melhorias e reconhecimentos
+  const achievement = (
+    id: string,
+    title: string,
+    a: {
+      type: string;
+      status?: string;
+      description: string;
+      impact?: string;
+      days: number;
+      authorIds: string[];
+      departmentId: string;
+      projectId?: string;
+      objectiveId?: string;
+      highlighted?: boolean;
+      createdById: string;
+    },
+  ) => ({
+    id,
+    title,
+    description: a.description,
+    type: a.type,
+    status: a.status ?? (a.type === "IDEA" ? "PROPOSED" : "IMPLEMENTED"),
+    impact: a.impact ?? null,
+    date: inDays(a.days),
+    link: null,
+    highlighted: a.highlighted ?? false,
+    authorIds: a.authorIds,
+    departmentId: a.departmentId,
+    projectId: a.projectId ?? null,
+    objectiveId: a.objectiveId ?? null,
+    createdById: a.createdById,
+    ...stamps,
+  });
+  const achievements = [
+    achievement("a-portal", "Portal de self-service de TI", {
+      type: "SOLUTION",
+      description: "Portal onde os colaboradores pedem acessos, equipamentos e reposição de passwords sem ligar para o Service Desk.",
+      impact: "35% menos chamadas ao Service Desk",
+      days: -40,
+      authorIds: ["p-gdev", "p-csd"],
+      departmentId: "dep-dev",
+      objectiveId: "o-digital",
+      highlighted: true,
+      createdById: "p-gdev",
+    }),
+    achievement("a-backups", "Automatização das cópias de segurança dos servidores", {
+      type: "IMPROVEMENT",
+      description: "Scripts que fazem e testam as cópias de segurança todas as noites, com relatório automático.",
+      impact: "20 horas poupadas por mês e reposição testada semanalmente",
+      days: -75,
+      authorIds: ["p-ginfra", "p-credes"],
+      departmentId: "dep-infra",
+      objectiveId: "o-servico",
+      highlighted: true,
+      createdById: "p-ginfra",
+    }),
+    achievement("a-chatbot", "Assistente virtual para pedidos de suporte", {
+      type: "IDEA",
+      status: "EVALUATING",
+      description: "Assistente no Teams que responde a dúvidas frequentes e abre tickets automaticamente.",
+      impact: "Estimativa: resolver 25% dos pedidos sem intervenção humana",
+      days: -12,
+      authorIds: ["p-tecnico"],
+      departmentId: "dep-sd",
+      objectiveId: "o-sla",
+      createdById: "p-tecnico",
+    }),
+    achievement("a-sdwan", "Migrar a rede das agências para SD-WAN", {
+      type: "IDEA",
+      status: "APPROVED",
+      description: "Substituir as linhas dedicadas por SD-WAN, com duas ligações por agência.",
+      impact: "Estimativa: 30% de redução no custo das comunicações",
+      days: -30,
+      authorIds: ["p-credes"],
+      departmentId: "dep-infra",
+      createdById: "p-credes",
+    }),
+    achievement("a-faturas", "Leitura automática de faturas de fornecedores", {
+      type: "IDEA",
+      description: "Extrair automaticamente os dados das faturas em PDF para o ERP.",
+      days: -3,
+      authorIds: ["p-gdev"],
+      departmentId: "dep-dev",
+      projectId: "pr-erp",
+      createdById: "p-gdev",
+    }),
+    achievement("a-premio", "Prémio interno de melhor projeto do ano", {
+      type: "RECOGNITION",
+      description: "A migração do ERP foi distinguida pela administração como projeto do ano.",
+      days: -20,
+      authorIds: ["p-diretor", "p-gdev"],
+      departmentId: "dep-dsi",
+      projectId: "pr-erp",
+      createdById: "p-diretor",
+    }),
+  ];
+
+  return { departments, people, objectives, kpis, measurements, projects, tasks, achievements };
 }
 
 export type DemoData = ReturnType<typeof buildDemoData>;
