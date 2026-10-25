@@ -180,3 +180,27 @@ export interface Dashboard {
   projects: { open: number; overdue: number; atRisk: number };
   alerts: Alert[];
 }
+
+export type AchievementType = "SOLUTION" | "IDEA" | "IMPROVEMENT" | "RECOGNITION";
+export type AchievementStatus = "PROPOSED" | "EVALUATING" | "APPROVED" | "IMPLEMENTED" | "DISCARDED";
+
+export interface Achievement {
+  id: string;
+  title: string;
+  description?: string | null;
+  type: AchievementType;
+  status: AchievementStatus;
+  impact?: string | null;
+  date: string;
+  link?: string | null;
+  highlighted: boolean;
+  authors: Person[];
+  departmentId?: string | null;
+  department?: { id: string; name: string; code: string } | null;
+  projectId?: string | null;
+  project?: { id: string; name: string } | null;
+  objectiveId?: string | null;
+  objective?: { id: string; title: string; level: ObjectiveLevel } | null;
+  createdById?: string | null;
+  createdBy?: Person | null;
+}

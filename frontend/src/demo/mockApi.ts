@@ -19,8 +19,9 @@ import { ApiError } from "../api";
 type Data = ReturnType<typeof buildDemoData>;
 type PersonRow = Data["people"][number];
 
-const STORE_KEY = "demo.store.v1";
-const DATE_FIELDS = new Set(["startDate", "dueDate", "completedAt", "achievedAt", "createdAt", "updatedAt"]);
+// v2: acrescentou os feitos da direção (dados antigos são substituídos pelos novos exemplos)
+const STORE_KEY = "demo.store.v2";
+const DATE_FIELDS = new Set(["startDate", "dueDate", "completedAt", "achievedAt", "createdAt", "updatedAt", "date"]);
 export const DEMO_PASSWORD = "demo";
 
 let store: Data = load();
@@ -296,9 +297,10 @@ route("DELETE", "/departments/:id", (ctx) => {
     store.kpis.some((k) => k.departmentId === id) ||
     store.projects.some((p) => p.departmentId === id) ||
     store.objectives.some((o) => o.departmentId === id) ||
+    store.achievements.some((x) => x.departmentId === id) ||
     store.departments.some((d) => d.parentId === id);
   if (used) {
-    fail(409, "Departamento possui pessoas, KPIs, projetos, objetivos ou áreas subordinadas; mova-os antes de remover");
+    fail(409, "Departamento possui pessoas, KPIs, projetos, objetivos, feitos ou áreas subordinadas; mova-os antes de remover");
   }
   remove(store.departments, id);
 });
@@ -341,6 +343,10 @@ route("DELETE", "/people/:id", (ctx) => {
   for (const p of store.projects) if (p.ownerId === id) (p as { ownerId: string | null }).ownerId = null;
   for (const t of store.tasks) if (t.assigneeId === id) (t as { assigneeId: string | null }).assigneeId = null;
   for (const o of store.objectives) if (o.ownerId === id) (o as { ownerId: string | null }).ownerId = null;
+  for (const a of store.achievements) {
+    a.authorIds = a.authorIds.filter((x) => x !== id);
+    if (a.createdById === id) (a as { createdById: string | null }).createdById = null;
+  }
   remove(store.people, id);
 });
 
@@ -511,6 +517,7 @@ route("DELETE", "/objectives/:id", (ctx) => {
   for (const k of store.kpis) if (k.objectiveId === id) (k as { objectiveId: string | null }).objectiveId = null;
   for (const p of store.projects) if (p.objectiveId === id) (p as { objectiveId: string | null }).objectiveId = null;
   for (const o of store.objectives) if (o.parentId === id) (o as { parentId: string | null }).parentId = null;
+  for (const a of store.achievements) if (a.objectiveId === id) (a as { objectiveId: string | null }).objectiveId = null;
   remove(store.objectives, id);
 });
 
@@ -579,6 +586,7 @@ route("DELETE", "/projects/:id", (ctx) => {
   const current = find(store.projects, ctx.params[0], "Projeto");
   assertCanManageProject(ctx, current);
   remove(store.projects, current.id);
+  for (const a of store.achievements) if (a.projectId === current.id) (a as { projectId: string | null }).projectId = null;
   store.tasks = store.tasks.filter((t) => t.projectId !== current.id);
 });
 
@@ -633,3 +641,99 @@ export function demoAccounts() {
     .filter((p) => p.active && p.email)
     .map((p) => ({ fullName: p.fullName, email: p.email, role: p.role, isAdmin: p.isAdmin }));
 }
+
+// ---------------------------------------------------------------------------
+// Feitos da direção (espelha src/routes/achievements.ts)
+// ---------------------------------------------------------------------------
+
+type AchievementRow = Data["achievements"][number];
+const DECISION_STATUSES = new Set(["EVALUATING", "APPROVED", "DISCARDED"]);
+const ACHIEVEMENT_FIELDS = ["title", "description", "type", "status", "impact", "date", "link", "departmentId", "projectId", "objectiveId"];
+
+function achievementView(a: AchievementRow) {
+  const person = (id: string | null) => publicPerson(store.people.find((p) => p.id === id));
+  const project = store.projects.find((p) => p.id === a.projectId);
+  const objective = store.objectives.find((o) => o.id === a.objectiveId);
+  return {
+    ...a,
+    authors: a.authorIds.map((id) => person(id)).filter(Boolean),
+    department: store.departments.find((d) => d.id === a.departmentId) ?? null,
+    project: project ? { id: project.id, name: project.name } : null,
+    objective: objective ? { id: objective.id, title: objective.title, level: objective.level } : null,
+    createdBy: person(a.createdById),
+  };
+}
+
+function canDecideAchievement(ctx: Ctx, a: { departmentId: string | null; authorIds: string[] }) {
+  if (ctx.user.isAdmin) return true;
+  if (!isLeader(ctx)) return false;
+  return canManageDepartment(ctx.scope, a.departmentId) || a.authorIds.some((id) => id !== ctx.user.id && ctx.scope.personIds.has(id));
+}
+
+function canEditAchievement(ctx: Ctx, a: AchievementRow) {
+  return a.createdById === ctx.user.id || a.authorIds.includes(ctx.user.id) || canDecideAchievement(ctx, a);
+}
+
+route("GET", "/achievements", () =>
+  [...store.achievements]
+    .sort((a, b) => b.date.getTime() - a.date.getTime() || b.createdAt.getTime() - a.createdAt.getTime())
+    .map(achievementView),
+);
+
+route("POST", "/achievements", (ctx) => {
+  const authorIds = Array.isArray(ctx.body.authorIds) && ctx.body.authorIds.length ? [...new Set(ctx.body.authorIds as string[])] : [ctx.user.id];
+  if (!ctx.user.isAdmin && !authorIds.includes(ctx.user.id) && !authorIds.every((id) => canManagePerson(ctx.scope, id))) {
+    fail(403, "Só pode registar feitos em que participou ou da sua equipa");
+  }
+  if (String(ctx.body.title ?? "").trim().length < 3) fail(400, "Dados inválidos");
+  const a = patch(
+    {
+      id: newId(),
+      title: "",
+      description: null,
+      type: "SOLUTION",
+      status: "",
+      impact: null,
+      date: now(),
+      link: null,
+      highlighted: false,
+      authorIds,
+      departmentId: null,
+      projectId: null,
+      objectiveId: null,
+      createdById: ctx.user.id,
+      createdAt: now(),
+      updatedAt: now(),
+    },
+    ctx.body,
+    ACHIEVEMENT_FIELDS,
+  ) as unknown as AchievementRow;
+  if (!a.status) a.status = a.type === "IDEA" ? "PROPOSED" : "IMPLEMENTED";
+  if (DECISION_STATUSES.has(a.status) && !canDecideAchievement(ctx, a)) a.status = "PROPOSED";
+  if (ctx.user.isAdmin && ctx.body.highlighted === true) a.highlighted = true;
+  store.achievements.push(a);
+  return achievementView(a);
+});
+
+route("PUT", "/achievements/:id", (ctx) => {
+  const current = find(store.achievements, ctx.params[0], "Feito");
+  if (!canEditAchievement(ctx, current)) {
+    fail(403, "Só quem registou, os autores, as chefias do departamento ou um administrador podem alterar este feito");
+  }
+  if ("highlighted" in ctx.body && !ctx.user.isAdmin) fail(403, "Só administradores destacam feitos");
+  const status = ctx.body.status as string | undefined;
+  if (status && status !== current.status && DECISION_STATUSES.has(status) && !canDecideAchievement(ctx, current)) {
+    fail(403, "Avaliar, aprovar ou pôr de parte uma ideia cabe às chefias ou a um administrador");
+  }
+  patch(current, ctx.body, [...ACHIEVEMENT_FIELDS, "highlighted"]);
+  if (Array.isArray(ctx.body.authorIds)) current.authorIds = [...new Set(ctx.body.authorIds as string[])];
+  return achievementView(current);
+});
+
+route("DELETE", "/achievements/:id", (ctx) => {
+  const current = find(store.achievements, ctx.params[0], "Feito");
+  if (!canEditAchievement(ctx, current)) {
+    fail(403, "Só quem registou, os autores, as chefias do departamento ou um administrador podem remover este feito");
+  }
+  remove(store.achievements, current.id);
+});

@@ -130,16 +130,17 @@ performanceRouter.delete(
   requireAdmin,
   asyncHandler(async (req, res) => {
     const id = req.params.id;
-    const [people, kpis, projects, objectives, children] = await Promise.all([
+    const [people, kpis, projects, objectives, children, achievements] = await Promise.all([
       prisma.person.count({ where: { departmentId: id } }),
       prisma.kpi.count({ where: { departmentId: id } }),
       prisma.project.count({ where: { departmentId: id } }),
       prisma.objective.count({ where: { departmentId: id } }),
       prisma.department.count({ where: { parentId: id } }),
+      prisma.achievement.count({ where: { departmentId: id } }),
     ]);
-    if (people + kpis + projects + objectives + children > 0) {
+    if (people + kpis + projects + objectives + children + achievements > 0) {
       return res.status(409).json({
-        error: "Departamento possui pessoas, KPIs, projetos, objetivos ou áreas subordinadas; mova-os antes de remover",
+        error: "Departamento possui pessoas, KPIs, projetos, objetivos, feitos ou áreas subordinadas; mova-os antes de remover",
       });
     }
     await prisma.department.delete({ where: { id } });

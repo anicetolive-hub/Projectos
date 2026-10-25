@@ -184,6 +184,57 @@ export const ASSISTANT_TOOLS: Tool[] = [
       additionalProperties: false,
     },
   },
+  {
+    name: "listar_feitos",
+    description:
+      "Lista os grandes feitos da direção: soluções desenvolvidas, ideias inovadoras (com o estado da ideia), melhorias de processo e reconhecimentos, com autores, departamento, impacto e data. Use para perguntas como 'que soluções entregámos este ano?' ou 'que ideias estão em avaliação?'.",
+    input_schema: {
+      type: "object",
+      properties: {
+        tipo: { type: "string", enum: ["SOLUTION", "IDEA", "IMPROVEMENT", "RECOGNITION"], description: "Filtrar por tipo" },
+        estado: { type: "string", enum: ["PROPOSED", "EVALUATING", "APPROVED", "IMPLEMENTED", "DISCARDED"], description: "Filtrar por estado" },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "registar_feito",
+    description:
+      "Regista um feito no mural da direção. tipo: SOLUTION (solução desenvolvida e entregue), IDEA (ideia inovadora; fica como proposta), IMPROVEMENT (melhoria de processo), RECOGNITION (prémio/reconhecimento). Sem autores indicados, o autor é o utilizador.",
+    input_schema: {
+      type: "object",
+      properties: {
+        titulo: { type: "string" },
+        tipo: { type: "string", enum: ["SOLUTION", "IDEA", "IMPROVEMENT", "RECOGNITION"] },
+        descricao: { type: "string", description: "O que é / o que resolve" },
+        impacto: { type: "string", description: "Resultado ou benefício, de preferência com números (ex: '120 horas poupadas por mês')" },
+        data: date("Data do feito ou da proposta; por omissão, hoje"),
+        autores_ids: { type: "array", items: { type: "string" }, description: "Ids das pessoas envolvidas" },
+        departamento_id: id("Departamento"),
+        projeto_id: id("Projeto relacionado"),
+        objetivo_id: id("Objetivo para o qual contribui"),
+      },
+      required: ["titulo", "tipo"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "atualizar_feito",
+    description:
+      "Atualiza um feito: estado da ideia (PROPOSED proposta, EVALUATING em avaliação, APPROVED aprovada, IMPLEMENTED implementada, DISCARDED posta de parte), impacto, descrição ou destaque na visão geral (só administradores).",
+    input_schema: {
+      type: "object",
+      properties: {
+        id: id("Id do feito"),
+        estado: { type: "string", enum: ["PROPOSED", "EVALUATING", "APPROVED", "IMPLEMENTED", "DISCARDED"] },
+        impacto: { type: "string" },
+        descricao: { type: "string" },
+        destaque: { type: "boolean" },
+      },
+      required: ["id"],
+      additionalProperties: false,
+    },
+  },
 ];
 
 /** Ferramentas que alteram dados (o frontend recarrega as páginas depois delas). */
@@ -194,4 +245,6 @@ export const WRITE_TOOLS = new Set([
   "atualizar_tarefa",
   "criar_projeto",
   "registar_valor_kpi",
+  "registar_feito",
+  "atualizar_feito",
 ]);

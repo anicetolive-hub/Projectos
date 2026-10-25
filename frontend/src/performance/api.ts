@@ -1,5 +1,5 @@
 import { request } from "../api";
-import type { Alert, Dashboard, Department, Kpi, KpiMeasurement, Objective, Person, Project, Task } from "./types";
+import type { Achievement, Alert, Dashboard, Department, Kpi, KpiMeasurement, Objective, Person, Project, Task } from "./types";
 
 const BASE = "/api/performance";
 
@@ -27,6 +27,10 @@ export type ProjectInput = Pick<
   Project,
   "name" | "description" | "status" | "priority" | "startDate" | "dueDate" | "ownerId" | "departmentId" | "objectiveId"
 >;
+export type AchievementInput = Pick<
+  Achievement,
+  "title" | "description" | "type" | "status" | "impact" | "date" | "link" | "highlighted" | "departmentId" | "projectId" | "objectiveId"
+> & { authorIds: string[] };
 export type ObjectiveInput = Pick<
   Objective,
   "title" | "description" | "level" | "status" | "weight" | "startDate" | "dueDate" | "parentId" | "departmentId" | "ownerId"
@@ -51,5 +55,6 @@ export const perfApi = {
   },
   projects: crud<Project, ProjectInput>("projects"),
   objectives: crud<Objective, ObjectiveInput>("objectives"),
+  achievements: crud<Achievement, AchievementInput>("achievements"),
   tasks: crud<Task, TaskInput>("tasks"),
 };
